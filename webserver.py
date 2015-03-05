@@ -34,18 +34,26 @@ def query_filter_by(ssn, name=None, item_id=None):
         raise AttributeError
 
 
-def update_name(ssn, res_id, new_name):
+def update_restaurant_name(ssn, res_id, new_name):
     """updates resource name filtering by id"""
     try:
-        print  res_id
         res = ssn.query(Restaurant).filter_by(id=res_id).one()
-        print res
         res.name = new_name
-        print res.name
         ssn.add(res)
         return ssn.commit()
     except:
         raise IOError
+
+
+def delete_restaurant(ssn, res_id):
+    """delete a resource by id"""
+    try:
+        res = ssn.query(Restaurant).filter_by(id=res_id).one()
+        ssn.delete(res)
+        return ssn.commit()
+    except:
+        raise IOError
+
 
 
 class webserverHandler(BaseHTTPRequestHandler):
@@ -65,7 +73,7 @@ class webserverHandler(BaseHTTPRequestHandler):
                 for q in session.query(Restaurant).all():
                     output += "<ul><li>" + q.name + "</li>"
                     output += "<li><a href=\"/restaurants/" + str(q.id) + "/edit\">Edit</a></li>"
-                    output += "<li><a href=\"#\">Delete</a></li>"
+                    output += "<li><a href=\"/restaurants/" + str(q.id) + "/delete\">Delete</a></li>"
                     output += "</ul><br/><br/>"
 
                 output += "</ul></body></html>"
@@ -112,6 +120,31 @@ class webserverHandler(BaseHTTPRequestHandler):
                 self.wfile.write(output)
                 return
 
+            if self.path.endswith("/delete"):
+                p = self.path
+                pos2 = p.rfind("/delete")
+                print p[13:pos2]
+                restaurant_id = p[13:pos2]
+
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                output = ""
+                output += "<html><body>"
+                session = start_session(engine)
+
+                restaurant = query_filter_by(session, name=None, item_id=int(restaurant_id))
+
+                output += """Are you sure you want to delete """ + restaurant.name + """?<br/>
+                 <form method='POST' enctype='multipart/form-data' action='/restaurants/""" + str(restaurant.id) + """/delete'>
+                 <input type="submit" value="Delete"> </form>"""
+
+                output += "</ul></body></html>"
+                session.close()
+                self.wfile.write(output)
+                return
+
         except IOError:
             self.send_error(404, "File Not Found %s" % self.path)
 
@@ -151,13 +184,12 @@ class webserverHandler(BaseHTTPRequestHandler):
 
                     p = self.path
                     pos2 = p.rfind("/edit")
-
                     restaurant_id = p[13:pos2]
 
                     session = start_session(engine)
 
                     try:
-                        update_name(session, res_id=int(restaurant_id), new_name=new_name)
+                        update_restaurant_name(session, res_id=int(restaurant_id), new_name=new_name)
                     except IOError as e :
                         raise e
 
@@ -166,7 +198,29 @@ class webserverHandler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', 'text/html')
                     self.send_header('Location', '/restaurants')  # automatic redirect
                     self.end_headers()
-                    self.wfile.write("")
+                    self.wfile.write("<html><body></body></html>")
+                    return
+
+            if self.path.endswith("/delete"):
+                ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    p = self.path
+                    pos2 = p.rfind("/delete")
+                    restaurant_id = p[13:pos2]
+
+                    session = start_session(engine)
+
+                    try:
+                        delete_restaurant(session, res_id=int(restaurant_id))
+                    except IOError as e :
+                        raise e
+
+                    session.close()
+                    self.send_response(301)
+                    self.send_header('Content-type', 'text/html')
+                    self.send_header('Location', '/restaurants')  # automatic redirect
+                    self.end_headers()
+                    self.wfile.write("<html><body></body></html>")
                     return
 
         except Exception:
