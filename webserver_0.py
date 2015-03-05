@@ -2,36 +2,39 @@ __author__ = 'lorenzo'
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import cgi
-from sqlalchemy.orm import sessionmaker, Query
-from database_setup import engine, Base, Restaurant, MenuItem
-
-def start_session(eng):
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(bind=eng)
-    session = DBSession()
-    return session
 
 
 class webserverHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            if self.path.endswith("/restaurants"):
+            if self.path.endswith("/hello"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
                 output = ""
-                output = ""
-                output += "<html><body><ul>"
-                session = start_session(engine)
+                output += "<html><body>Server is Running</body></html>"
+                output += """<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>"""
+                output += "</html></body>"
 
-                for q in session.query(Restaurant).all():
-                    output += "<li>" + q.name + "</li>"
-
-                output += "</ul></body></html>"
                 self.wfile.write(output)
+                print output
+                return
+            if self.path.endswith("/hola"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                message = ""
+                message += "<html><body> &#161 Hola ! </body></html>"
+                message += """<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>"""
+                message += "</html></body>"
+                self.wfile.write(message)
                 return
 
+                self.wfile.write(message)
+                print message
+                return
         except IOError:
             self.send_error(404, "File Not Found %s" % self.path)
 
@@ -58,6 +61,9 @@ class webserverHandler(BaseHTTPRequestHandler):
         except:
             pass
 
+
+
+
 def main():
     try:
         port = 8080
@@ -71,4 +77,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
