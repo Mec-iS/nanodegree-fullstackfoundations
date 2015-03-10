@@ -72,7 +72,7 @@ def update_item_price(ssn, query, new_price):
 
 
 
-#create_sqlite_file(engine)
+create_sqlite_file(engine)
 session = start_session(engine)
 ################
 #insert_mock_data(session)

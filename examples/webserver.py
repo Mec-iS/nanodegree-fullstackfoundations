@@ -2,16 +2,9 @@ __author__ = 'lorenzo'
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import cgi
-from sqlalchemy.orm import sessionmaker, Query
-from database_setup import engine, Base, Restaurant, MenuItem
 
-
-def start_session(eng):
-    """This method starts an SQLAlchemy session"""
-    Base.metadata.bind = eng
-    DBSession = sessionmaker(bind=eng)
-    session = DBSession()
-    return session
+from libs.database_setup import engine, Restaurant
+from libs.dbSession import start_session
 
 
 def insert_restaurant(ssn, name):
